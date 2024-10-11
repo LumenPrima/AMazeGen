@@ -49,6 +49,30 @@ You can install the required libraries using pip:
 pip install cairosvg
 ```
 
+## Version Control
+
+This project is version controlled using Git. The `.gitignore` file is set up to exclude:
+
+- The `oldtests/` directory
+- Python virtual environments (`.venv/`)
+- Python cache files and compiled bytecode
+- IDE and editor-specific files
+- OS-generated files
+- Logs and databases
+- Build output directories
+
+## Contributing
+
+To contribute to this project:
+
+1. Fork the repository
+2. Create a new branch for your feature (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+Please ensure your code adheres to the project's coding standards and includes appropriate tests.
+
 ## License
 
 This project is open-source and available under the MIT License.
