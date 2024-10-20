@@ -87,12 +87,7 @@ def calculate_difficulty(maze):
         return 0  # No solution, so difficulty is 0
 
     path_length = len(path)
-
-    # Total number of cells (excluding walls)
     total_cells = maze.width * maze.height
-
-    # Calculate path difficulty: longer paths in larger mazes should be more difficult
-    path_difficulty = path_length / (2 * total_cells - 1) if total_cells > 0 else 0
 
     # Initialize counters
     dead_ends = 0
@@ -123,30 +118,17 @@ def calculate_difficulty(maze):
     if total_open_cells == 0:
         return 0
 
-    # Dead-end fraction
-    dead_end_fraction = dead_ends / total_open_cells
-
-    # Intersection fraction
-    intersection_fraction = intersections / total_open_cells
-
-    # Average branching factor (normalized)
-    average_branching_factor = (total_branches / total_open_cells) / 4  # Max possible branching is 4
-
-    # Maze density (normalized)
-    wall_cells = sum(1 for row in maze.grid for cell in row if cell == 1)
-    possible_walls = len(maze.grid) * len(maze.grid[0])
-    density = wall_cells / possible_walls
-
     # Calculate straight line penalty
     straight_line_penalty = calculate_straight_line_penalty(path)
 
-    # Combine metrics into a difficulty score
+    # Combine metrics into a difficulty score without normalization
     difficulty = (
-        0.40 * path_difficulty +         # Emphasize path length
-        0.20 * dead_end_fraction +       # Dead ends contribute to difficulty
-        0.15 * intersection_fraction +   # Intersections increase complexity
-        0.15 * average_branching_factor + # More choices increase difficulty
-        0.10 * straight_line_penalty     # Penalize long straight lines
+        path_length +  # Longer paths increase difficulty
+        dead_ends * 10 +  # Each dead end adds to difficulty
+        intersections * 5 +  # Each intersection adds to difficulty
+        total_branches +  # More branches increase difficulty
+        straight_line_penalty * 100 +  # Penalize long straight lines
+        total_cells  # Larger mazes are inherently more difficult
     )
 
     return difficulty

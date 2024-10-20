@@ -111,4 +111,4 @@ def verify_maze(maze):
     if not visited[maze.finish[0]][maze.finish[1]]:
         raise ValueError("Invalid maze: start and finish are not connected")
 
-    print("Maze verification passed")
+    # print("Maze verification passed")
