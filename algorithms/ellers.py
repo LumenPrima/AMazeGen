@@ -7,10 +7,10 @@ def generate_ellers(maze):
     next_set = 1
 
     for y in range(height):
-        # Assign sets to cells
+        # Assign sets to cells that don't already have one from vertical connections
         for x in range(width):
-            if grid[y * 2 + 1][x * 2 + 1] == 1:
-                grid[y * 2 + 1][x * 2 + 1] = 0
+            grid[y * 2 + 1][x * 2 + 1] = 0
+            if x not in sets[y] or sets[y][x] is None:
                 sets[y][x] = next_set
                 next_set += 1
 

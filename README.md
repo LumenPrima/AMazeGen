@@ -66,14 +66,30 @@ To add your own maze generation algorithm:
 
 The main application will automatically detect and include your new algorithm at runtime.
 
-## Maze Difficulty Calculation
+## Maze Difficulty Rating
 
-The project includes a method to calculate maze difficulty based on several factors:
+Each maze receives a difficulty score from **0.0 to 1.0** that is independent of maze size. The score combines four normalized components:
 
-- Path length: Longer solutions increase difficulty.
-- Number of dead ends: More dead ends make a maze more challenging.
-- Number of intersections: More choices at intersections increase complexity.
-- Maze density: Denser mazes with more walls are generally more difficult.
+| Component | Weight | What it measures |
+|---|---|---|
+| **Path indirectness** | 35% | How much longer the solution path is compared to the Manhattan distance between start and finish. A winding solution that traverses most of the maze scores high; a nearly straight-line path scores low. |
+| **Dead end density** | 25% | Fraction of open cells that are dead ends (only one exit). More dead ends means more traps for the solver. Perfect tree mazes peak around 50% dead ends, so the raw ratio is doubled and capped at 1.0. |
+| **Decision density** | 25% | Fraction of solution-path cells that have more than 2 open neighbors (i.e., the solver must choose a direction). Scaled by 3x since typical values are 0–0.3. |
+| **Turn density** | 15% | Fraction of solution-path steps where the direction changes. Straight corridors are easy to follow; frequent turns are harder. |
+
+### Algorithm Rankings
+
+A study of 5,100 maze generations (18 algorithms, 10–15 sizes from 5 to 100, 20 runs each) confirms the scores are stable across sizes:
+
+| Tier | Algorithms | Mean Score |
+|---|---|---|
+| Hard (0.4–0.5) | Randomized Prufer, Prim, Kruskal Weighted, Kruskal | 0.40–0.50 |
+| Medium (0.3–0.4) | Aldous-Broder, Growing Tree, Wilson's, Eller's, Fractal Recursive Division, Sidewinder, Binary Tree | 0.32–0.38 |
+| Easy (0.2–0.3) | Cellular Automata, Quad Tree, Spiral Backtracker, Braid, Recursive Backtracker, DFS, Hunt and Kill | 0.20–0.29 |
+
+Algorithms that create highly branching spanning trees (Prim, Kruskal) produce the hardest mazes because every junction is a potential wrong turn. Algorithms that carve long corridors (DFS, Hunt and Kill, Recursive Backtracker) produce easier mazes with fewer decision points.
+
+Run `python difficulty_study.py` to regenerate the full analysis charts from cached data, or `python difficulty_study.py --regenerate` to re-collect all 5,100 data points.
 
 ## Output Formats
 
@@ -170,7 +186,7 @@ This project requires the following Python libraries:
 - cairosvg (for SVG to PNG conversion)
 - Pillow (for image processing in image-based maze generation)
 
-The full list of dependencies can be found in the `requirements.txt` file.
+Install them with: `pip install cairosvg Pillow matplotlib numpy`
 
 ## Contributing
 

@@ -77,69 +77,6 @@ def generate_recursive_division(maze):
     grid = maze.grid
 
     def divide(x, y, w, h, orientation):
-        if w < 3 or h < 3:
-            return
-
-        horizontal = orientation == 'H'
-
-        # Where will the wall be drawn?
-        wx = x + (0 if horizontal else random.randrange(0, w // 2) * 2 + 1)
-        wy = y + (random.randrange(0, h // 2) * 2 + 1 if horizontal else 0)
-
-        # Where will the passage through the wall exist?
-        px = wx + (random.randrange(0, w // 2) * 2 + 1 if horizontal else 0)
-        py = wy + (0 if horizontal else random.randrange(0, h // 2) * 2 + 1)
-
-        # Direction of wall
-        dx = 1 if horizontal else 0
-        dy = 0 if horizontal else 1
-
-        # Length of wall
-        length = w if horizontal else h
-        length = length // 2 * 2
-
-        # Draw the wall
-        for i in range(length):
-            if (wx != px or wy != py):
-                grid[wy][wx] = 1
-            wx += dx
-            wy += dy
-
-        # Recursively divide the subareas
-        nx, ny = x, y
-        nw, nh = (w, wy - y) if horizontal else (wx - x, h)
-        divide(nx, ny, nw, nh, choose_orientation(nw, nh))
-
-        nx, ny = (x, wy + 1) if horizontal else (wx + 1, y)
-        nw, nh = (w, y + h - wy - 1) if horizontal else (x + w - wx - 1, h)
-        divide(nx, ny, nw, nh, choose_orientation(nw, nh))
-
-    def choose_orientation(w, h):
-        if w < h:
-            return 'H'
-        elif h < w:
-            return 'V'
-        else:
-            return 'H' if random.choice([True, False]) else 'V'
-
-    # Initialize the grid with walls
-    for y in range(height):
-        for x in range(width):
-            grid[y][x] = 1
-
-    # Carve out the initial area
-    for y in range(1, height, 2):
-        for x in range(1, width, 2):
-            grid[y][x] = 0
-
-    # Start the division
-    divide(1, 1, width - 2, height - 2, choose_orientation(width, height))
-
-def generate_recursive_division(maze):
-    width, height = maze.width * 2 + 1, maze.height * 2 + 1
-    grid = maze.grid
-
-    def divide(x, y, w, h, orientation):
         if w <= 2 or h <= 2:
             return
 
@@ -227,9 +164,6 @@ def generate_aldous_broder(maze):
                 grid[y * 2 + 1 + dy][x * 2 + 1 + dx] = 0
                 grid[ny * 2 + 1][nx * 2 + 1] = 0
                 visited_cells += 1
-            x, y = nx, ny
-        else:
-            # Move to the neighbor even if it's visited
             x, y = nx, ny
 
 def generate_wilsons(maze):

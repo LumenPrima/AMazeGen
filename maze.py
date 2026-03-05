@@ -22,7 +22,8 @@ class Maze:
     
     def generate(self):
         self.generate_func(self)
-        select_start_finish(self)  # Call the imported function instead of a method
+        if self.start is None or self.finish is None:
+            select_start_finish(self)
 
     def to_svg(self, margin=10):
         return to_svg(self, self.cell_size, margin)

@@ -82,84 +82,89 @@ def select_start_finish(maze):
                 break  # Path is carved, exit the loop
 
 def calculate_difficulty(maze):
+    """Calculate maze difficulty as a size-independent score from 0.0 to 1.0.
+
+    Components (all normalized ratios):
+      - Path indirectness: how much longer the solution is vs manhattan distance
+      - Dead end density: fraction of cells that are traps
+      - Decision density: fraction of solution steps where solver must choose
+      - Turn density: fraction of solution steps with direction changes
+    """
     path = maze.find_path()
     if not path:
-        return 0  # No solution, so difficulty is 0
+        return 0.0
 
     path_length = len(path)
-    total_cells = maze.width * maze.height
+    grid = maze.grid
+    grid_h = len(grid)
+    grid_w = len(grid[0])
 
-    # Initialize counters
-    dead_ends = 0
-    intersections = 0
+    # Manhattan distance between start and finish (grid coordinates)
+    manhattan = abs(maze.start[0] - maze.finish[0]) + abs(maze.start[1] - maze.finish[1])
+    if manhattan == 0:
+        return 0.0
+
+    # --- Maze-wide metrics ---
     total_open_cells = 0
-    total_branches = 0
-
+    dead_ends = 0
     for y in range(maze.height):
         for x in range(maze.width):
-            cell_y, cell_x = y * 2 + 1, x * 2 + 1
-            if maze.grid[cell_y][cell_x] == 0:
+            cy, cx = y * 2 + 1, x * 2 + 1
+            if grid[cy][cx] == 0:
                 total_open_cells += 1
-                # Count open neighbors
-                open_neighbors = 0
-                for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-                    nx, ny = x + dx, y + dy
-                    if 0 <= nx < maze.width and 0 <= ny < maze.height:
-                        neighbor_cell_y, neighbor_cell_x = ny * 2 + 1, nx * 2 + 1
-                        if maze.grid[neighbor_cell_y][neighbor_cell_x] == 0:
-                            open_neighbors += 1
-                total_branches += open_neighbors
-                if open_neighbors == 1:
+                walls_open = 0
+                for dy, dx in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                    if grid[cy + dy][cx + dx] == 0:
+                        walls_open += 1
+                if walls_open == 1:
                     dead_ends += 1
-                elif open_neighbors > 2:
-                    intersections += 1
 
-    # Avoid division by zero
     if total_open_cells == 0:
-        return 0
+        return 0.0
 
-    # Calculate straight line penalty
-    straight_line_penalty = calculate_straight_line_penalty(path)
+    # --- Path metrics ---
+    # Decision points: path cells with > 2 open grid neighbors (must choose)
+    decisions = 0
+    for r, c in path:
+        neighbors = 0
+        for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+            nr, nc = r + dr, c + dc
+            if 0 <= nr < grid_h and 0 <= nc < grid_w and grid[nr][nc] == 0:
+                neighbors += 1
+        if neighbors > 2:
+            decisions += 1
 
-    # Combine metrics into a difficulty score without normalization
+    # Turn count: direction changes along the path
+    turns = 0
+    for i in range(2, path_length):
+        d1 = (path[i-1][0] - path[i-2][0], path[i-1][1] - path[i-2][1])
+        d2 = (path[i][0] - path[i-1][0], path[i][1] - path[i-1][1])
+        if d1 != d2:
+            turns += 1
+
+    # --- Normalized components, each scaled to [0, 1] ---
+
+    # Path indirectness: how winding is the solution relative to straight line?
+    total_open_grid = sum(1 for row in grid for c in row if c == 0)
+    max_path = max(total_open_grid, manhattan + 1)
+    indirectness = (path_length - manhattan) / max(max_path - manhattan, 1)
+    indirectness = min(max(indirectness, 0.0), 1.0)
+
+    # Dead end density (perfect mazes peak ~0.5, so *2 to normalize to ~1.0)
+    dead_end_score = min(dead_ends / total_open_cells * 2, 1.0)
+
+    # Decision density along solution (typically 0–0.3, so *3 to normalize)
+    decision_score = min(decisions / path_length * 3, 1.0)
+
+    # Turn density along solution
+    turn_score = turns / max(path_length - 1, 1)
+
+    # --- Weighted combination → [0, 1] ---
     difficulty = (
-        path_length +  # Longer paths increase difficulty
-        dead_ends * 10 +  # Each dead end adds to difficulty
-        intersections * 5 +  # Each intersection adds to difficulty
-        total_branches +  # More branches increase difficulty
-        straight_line_penalty * 100 +  # Penalize long straight lines
-        total_cells  # Larger mazes are inherently more difficult
+        indirectness   * 0.35 +
+        dead_end_score * 0.25 +
+        decision_score * 0.25 +
+        turn_score     * 0.15
     )
 
-    return difficulty
-
-def calculate_straight_line_penalty(path):
-    if not path or len(path) < 3:
-        return 0
-
-    straight_line_segments = []
-    current_segment = [path[0], path[1]]
-    current_direction = (path[1][0] - path[0][0], path[1][1] - path[0][1])
-
-    for i in range(2, len(path)):
-        new_direction = (path[i][0] - path[i-1][0], path[i][1] - path[i-1][1])
-        if new_direction == current_direction:
-            current_segment.append(path[i])
-        else:
-            if len(current_segment) > 2:
-                straight_line_segments.append(current_segment)
-            current_segment = [path[i-1], path[i]]
-            current_direction = new_direction
-
-    if len(current_segment) > 2:
-        straight_line_segments.append(current_segment)
-
-    # Calculate penalty based on the length of straight line segments
-    total_path_length = len(path)
-    straight_line_length = sum(len(segment) for segment in straight_line_segments)
-    straight_line_ratio = straight_line_length / total_path_length
-
-    # Apply a more severe penalty for higher ratios of straight lines
-    penalty = math.pow(straight_line_ratio, 2)  # Quadratic penalty
-
-    return penalty
+    return round(difficulty, 4)

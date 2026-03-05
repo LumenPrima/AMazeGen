@@ -1,55 +1,48 @@
 import random
+from disjoint_set import DisjointSet
 
 def generate_randomized_prufer(maze):
+    """Generate a maze using Prufer-sequence-weighted random spanning tree.
+
+    Uses a random Prufer sequence to assign priority weights to cells.
+    Cells appearing more frequently in the sequence become connection hubs,
+    creating mazes with a distinct branching structure.
+    """
     width, height = maze.width, maze.height
     grid = maze.grid
+    total = width * height
 
-    def get_cell_index(x, y):
-        return y * width + x
+    # Generate a Prufer sequence to determine cell priorities
+    prufer = [random.randint(0, total - 1) for _ in range(total - 2)]
+    freq = [0] * total
+    for v in prufer:
+        freq[v] += 1
 
-    def get_cell_coords(index):
-        return index % width, index // width
-
-    # Generate a random Prüfer sequence
-    sequence_length = width * height - 2
-    prufer_sequence = [random.randint(0, width * height - 1) for _ in range(sequence_length)]
-
-    # Count the occurrences of each vertex in the Prüfer sequence
-    vertex_counts = [0] * (width * height)
-    for vertex in prufer_sequence:
-        vertex_counts[vertex] += 1
-
-    # Construct the tree from the Prüfer sequence
+    # Collect grid-adjacent edges, prioritized by Prufer frequency
     edges = []
-    for i in range(sequence_length):
-        for j in range(width * height):
-            if vertex_counts[j] == 0:
-                edges.append((j, prufer_sequence[i]))
-                vertex_counts[j] = -1
-                vertex_counts[prufer_sequence[i]] -= 1
-                break
+    for y in range(height):
+        for x in range(width):
+            idx = y * width + x
+            if x < width - 1:
+                nidx = y * width + (x + 1)
+                priority = freq[idx] + freq[nidx] + random.random()
+                edges.append((priority, x, y, x + 1, y))
+            if y < height - 1:
+                nidx = (y + 1) * width + x
+                priority = freq[idx] + freq[nidx] + random.random()
+                edges.append((priority, x, y, x, y + 1))
 
-    # Add the last edge
-    last_vertices = [i for i in range(width * height) if vertex_counts[i] == 0]
-    edges.append((last_vertices[0], last_vertices[1]))
+    # Sort by priority descending — high-frequency cells get connected first
+    edges.sort(reverse=True)
 
-    # Carve passages based on the edges
-    for edge in edges:
-        x1, y1 = get_cell_coords(edge[0])
-        x2, y2 = get_cell_coords(edge[1])
-        
-        # Ensure we're not carving through the outer walls
-        if 0 < x1 < width-1 and 0 < y1 < height-1 and 0 < x2 < width-1 and 0 < y2 < height-1:
-            mid_x = x1 + (x2 - x1) // 2
-            mid_y = y1 + (y2 - y1) // 2
-            grid[y1 * 2 + 1][x1 * 2 + 1] = 0  # Mark cell as passage
-            grid[y2 * 2 + 1][x2 * 2 + 1] = 0  # Mark cell as passage
-            grid[mid_y * 2 + 1][mid_x * 2 + 1] = 0  # Mark the wall between cells as passage
+    # Build spanning tree
+    ds = DisjointSet([(x, y) for x in range(width) for y in range(height)])
 
-    # Ensure outer walls are intact
-    for x in range(width * 2 + 1):
-        grid[0][x] = 1
-        grid[height * 2][x] = 1
-    for y in range(height * 2 + 1):
-        grid[y][0] = 1
-        grid[y][width * 2] = 1
+    for _, x1, y1, x2, y2 in edges:
+        if ds.find((x1, y1)) != ds.find((x2, y2)):
+            ds.union((x1, y1), (x2, y2))
+            grid[y1 * 2 + 1][x1 * 2 + 1] = 0
+            grid[y2 * 2 + 1][x2 * 2 + 1] = 0
+            wall_y = y1 * 2 + 1 + (y2 - y1)
+            wall_x = x1 * 2 + 1 + (x2 - x1)
+            grid[wall_y][wall_x] = 0

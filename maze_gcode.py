@@ -63,12 +63,12 @@ def to_gcode(maze, cell_size=10, margin=10, max_size=200, include_solution=False
     if include_solution:
         solution = maze.find_path()
         if solution:
-            # Move to the start of the solution path
-            x0, y0 = grid_to_plotter(solution[0][1] * 2 + 1, solution[0][0] * 2 + 1)
+            # Solution path is already in grid coordinates (row, col)
+            x0, y0 = grid_to_plotter(solution[0][1], solution[0][0])
             gcode_commands.append(f'G0 X{x0:.2f} Y{y0:.2f}')  # Move to start
             gcode_commands.append('G1 Z-1 F500')  # Pen down
-            for y, x in solution[1:]:
-                x1, y1 = grid_to_plotter(x * 2 + 1, y * 2 + 1)
+            for row, col in solution[1:]:
+                x1, y1 = grid_to_plotter(col, row)
                 gcode_commands.append(f'G1 X{x1:.2f} Y{y1:.2f} F2500')  # Draw line
             gcode_commands.append('G0 Z3')  # Pen up
 

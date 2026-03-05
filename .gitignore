@@ -1,5 +1,7 @@
 # Project-specific
 oldtests/
+output/
+difficulty_study_data.csv
 
 # Virtual environment
 .venv/

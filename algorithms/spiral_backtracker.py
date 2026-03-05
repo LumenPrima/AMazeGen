@@ -11,6 +11,7 @@ def generate_spiral_backtracker(maze):
     stack = [(start_x, start_y)]
     visited = [[False] * width for _ in range(height)]
     visited[start_y][start_x] = True
+    grid[start_y * 2 + 1][start_x * 2 + 1] = 0
 
     # Spiral directions: right, down, left, up
     directions = [(1, 0), (0, 1), (-1, 0), (0, -1)]

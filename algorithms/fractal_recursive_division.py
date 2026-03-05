@@ -3,58 +3,67 @@ import random
 def generate_fractal_recursive_division(maze):
     width, height = maze.width, maze.height
     grid = maze.grid
+    grid_w = width * 2 + 1
+    grid_h = height * 2 + 1
+
+    # Initialize: open all interior cells and passages between them
+    for gy in range(grid_h):
+        for gx in range(grid_w):
+            if gy == 0 or gy == grid_h - 1 or gx == 0 or gx == grid_w - 1:
+                grid[gy][gx] = 1  # Border walls
+            elif gy % 2 == 0 and gx % 2 == 0:
+                grid[gy][gx] = 1  # Pillar positions always walls
+            else:
+                grid[gy][gx] = 0  # Open cells and passages
+
+    max_depth = max(1, int(min(width, height) * 0.5))
 
     def divide(x, y, w, h, depth):
-        if w <= 2 or h <= 2 or depth <= 0:
+        if w <= 1 or h <= 1 or depth <= 0:
             return
 
-        # Choose orientation (horizontal or vertical)
-        horizontal = True if h > w else False
-        if w == h:
+        if h > w:
+            horizontal = True
+        elif w > h:
+            horizontal = False
+        else:
             horizontal = random.choice([True, False])
 
         if horizontal:
-            # Choose where to draw the line
-            divide_y = random.randint(y + 1, y + h - 2)
-            # Choose where to put the passage
+            # Wall between logical row divide_y and divide_y+1
+            divide_y = random.randint(y, y + h - 2)
+            wall_grid_y = divide_y * 2 + 2  # Even grid row = wall row
+
+            # Passage at one cell column
             passage_x = random.randint(x, x + w - 1)
+            passage_grid_x = passage_x * 2 + 1
 
-            # Draw the horizontal line
+            # Draw horizontal wall
             for i in range(x, x + w):
-                if i != passage_x:
-                    grid[divide_y * 2 + 1][i * 2 + 1] = 1
+                grid_x = i * 2 + 1
+                if grid_x != passage_grid_x:
+                    grid[wall_grid_y][grid_x] = 1
 
-            # Recursively divide the two new sections
-            divide(x, y, w, divide_y - y, depth - 1)
+            # Recurse into top and bottom halves
+            divide(x, y, w, divide_y - y + 1, depth - 1)
             divide(x, divide_y + 1, w, y + h - divide_y - 1, depth - 1)
         else:
-            # Choose where to draw the line
-            divide_x = random.randint(x + 1, x + w - 2)
-            # Choose where to put the passage
+            # Wall between logical column divide_x and divide_x+1
+            divide_x = random.randint(x, x + w - 2)
+            wall_grid_x = divide_x * 2 + 2  # Even grid col = wall col
+
+            # Passage at one cell row
             passage_y = random.randint(y, y + h - 1)
+            passage_grid_y = passage_y * 2 + 1
 
-            # Draw the vertical line
+            # Draw vertical wall
             for i in range(y, y + h):
-                if i != passage_y:
-                    grid[i * 2 + 1][divide_x * 2 + 1] = 1
+                grid_y = i * 2 + 1
+                if grid_y != passage_grid_y:
+                    grid[grid_y][wall_grid_x] = 1
 
-            # Recursively divide the two new sections
-            divide(x, y, divide_x - x, h, depth - 1)
+            # Recurse into left and right halves
+            divide(x, y, divide_x - x + 1, h, depth - 1)
             divide(divide_x + 1, y, x + w - divide_x - 1, h, depth - 1)
 
-    # Initialize the grid with all passages open
-    for y in range(height):
-        for x in range(width):
-            grid[y * 2 + 1][x * 2 + 1] = 0
-
-    # Add outer walls
-    for x in range(width * 2 + 1):
-        grid[0][x] = 1
-        grid[height * 2][x] = 1
-    for y in range(height * 2 + 1):
-        grid[y][0] = 1
-        grid[y][width * 2] = 1
-
-    # Start the recursive division
-    max_depth = int(min(width, height) * 0.5)  # Adjust this value to control the fractal depth
     divide(0, 0, width, height, max_depth)

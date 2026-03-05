@@ -23,16 +23,16 @@ def generate_short_name(name):
         return name[:3]
 
 # Dynamically create ALGO_MAP
-ALGO_MAP = {generate_short_name(name): (name, getattr(module, f'generate_{name}', None)) 
-            for name, module in algorithm_modules.items()}
+ALGO_MAP = {}
+for name, module in algorithm_modules.items():
+    func = getattr(module, f'generate_{name}', None)
+    if func is not None:
+        ALGO_MAP[generate_short_name(name)] = (name, func)
+    else:
+        print(f"Warning: No function 'generate_{name}' found in algorithms/{name}.py, skipping.")
 
 # Create a reverse mapping from full names to short names
 REVERSE_ALGO_MAP = {full_name: short_name for short_name, (full_name, _) in ALGO_MAP.items()}
-
-# Debug: Print ALGO_MAP
-print("ALGO_MAP contents:")
-for short_name, (full_name, func) in ALGO_MAP.items():
-    print(f"  {short_name}: ({full_name}, {'function' if func else 'None'})")
 
 def generate_maze(width, height, algorithms, output_formats=None, num_mazes=5, generate_output=True, print_stats=False, image_path=None, output_dir='./output', seed=None, start_point=None, end_point=None, cell_size=10):
     if output_formats is None:
@@ -61,9 +61,9 @@ def generate_maze(width, height, algorithms, output_formats=None, num_mazes=5, g
             
             # Set custom start and end points if provided
             if start_point:
-                maze.start = start_point
+                maze.start = (start_point[1], start_point[0])  # Convert (X,Y) to (row,col)
             if end_point:
-                maze.finish = end_point
+                maze.finish = (end_point[1], end_point[0])  # Convert (X,Y) to (row,col)
             
             # Calculate the difficulty of the maze
             difficulty = maze.calculate_difficulty()
@@ -161,11 +161,6 @@ if __name__ == "__main__":
                 selected_algorithms.append(ALGO_MAP[REVERSE_ALGO_MAP[algo]])
             else:
                 print(f"Warning: Unknown algorithm '{algo}'. Skipping.")
-    
-    # Debug: Print selected algorithms
-    print("\nSelected algorithms:")
-    for algo in selected_algorithms:
-        print(f"  {algo}")
     
     # Create output directory if it doesn't exist
     os.makedirs(args.output_dir, exist_ok=True)
