@@ -11,8 +11,8 @@ def to_gcode(maze, cell_size=10, margin=10, max_size=200, include_solution=False
 
     # Function to convert grid coordinates to plotter coordinates
     def grid_to_plotter(x, y):
-        px = x * scale
-        py = (maze_height - y - 1) * scale  # Flip Y-axis
+        px = margin + x * scale
+        py = margin + (maze_height - y - 1) * scale  # Flip Y-axis
         return px, py
 
     # Draw vertical lines

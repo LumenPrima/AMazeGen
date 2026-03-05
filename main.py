@@ -55,7 +55,10 @@ def generate_maze(width, height, algorithms, output_formats=None, num_mazes=5, g
                 if image_path is None:
                     print("Error: Image path is required for maze_from_image algorithm.")
                     continue
-                maze.generate()
+                maze.generate_func(maze, image_path=image_path)
+                if maze.start is None or maze.finish is None:
+                    from maze_utils import select_start_finish
+                    select_start_finish(maze)
             else:
                 maze.generate()
             
